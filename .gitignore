@@ -1,0 +1,30 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# Node / React
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Razvojna okruzenja
+.idea/
+*.iml
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# Operativni sistem
+Thumbs.db
+.DS_Store
+
+# Logovi
+*.log
+logs/
+
+# Lokalna konfiguracija razvojnog alata
+.claude/
