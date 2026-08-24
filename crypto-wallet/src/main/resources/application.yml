@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: crypto-wallet
+
+  # Sopstvena H2 in-memory baza - database per service obrazac.
+  datasource:
+    url: jdbc:h2:mem:cryptodb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+server:
+  port: ${SERVER_PORT:8300}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.soas: INFO
