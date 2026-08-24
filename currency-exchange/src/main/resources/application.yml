@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: currency-exchange
+
+server:
+  port: ${SERVER_PORT:8000}
+
+# Eksterni API sa kursevima fiat valuta - otvoren, ne zahteva API kljuc.
+external:
+  fiat-api:
+    url: ${FIAT_API_URL:https://open.er-api.com}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.soas: INFO
