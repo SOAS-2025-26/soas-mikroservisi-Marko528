@@ -11,18 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-/**
- * Prosledjuje identitet autentikovanog korisnika mikroservisima iza gateway-a.
- *
- * Autentikacija se obavlja iskljucivo ovde, a mikroservisi na osnovu zaglavlja
- * X-Auth-Email i X-Auth-Role rade proveru ovlascenja.
- *
- * Zaglavlja koja bi klijent sam poslao se prvo uklanjaju, kako niko ne bi mogao
- * da se lazno predstavi kao drugi korisnik ili druga uloga.
- */
 @Component
 public class AuthHeaderGlobalFilter implements GlobalFilter, Ordered {
-
     public static final String EMAIL_HEADER = "X-Auth-Email";
     public static final String ROLE_HEADER = "X-Auth-Role";
     private static final String ROLE_PREFIX = "ROLE_";
@@ -33,7 +23,7 @@ public class AuthHeaderGlobalFilter implements GlobalFilter, Ordered {
                 .map(context -> context.getAuthentication())
                 .filter(Authentication::isAuthenticated)
                 .map(authentication -> withIdentity(exchange, authentication))
-                // Nema prijavljenog korisnika (javne rute) - samo ocistiti zaglavlja.
+
                 .defaultIfEmpty(withoutIdentity(exchange))
                 .flatMap(chain::filter);
     }
@@ -72,7 +62,6 @@ public class AuthHeaderGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // Pokrece se pre rutiranja zahteva ka mikroservisu.
         return Ordered.LOWEST_PRECEDENCE - 1;
     }
 }

@@ -7,11 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-/**
- * Jedan zapis bankovnog racuna: kolicina jedne fiat valute koju korisnik poseduje.
- */
 public class BankAccountDto {
-
     private Long id;
 
     @NotBlank(message = "email je obavezan")
@@ -21,8 +17,8 @@ public class BankAccountDto {
     @NotBlank(message = "kod valute je obavezan (npr. EUR, USD, RSD)")
     private String currencyCode;
 
-    @NotNull(message = "kolicina je obavezna")
-    @DecimalMin(value = "0.0", message = "kolicina ne moze biti negativna")
+    @NotNull(message = "količina je obavezna")
+    @DecimalMin(value = "0.0", message = "količina ne može biti negativna")
     private BigDecimal amount;
 
     public BankAccountDto() {

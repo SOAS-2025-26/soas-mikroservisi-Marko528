@@ -2,12 +2,7 @@ package com.soas.library.dto;
 
 import java.math.BigDecimal;
 
-/**
- * Kurs razmene dve fiat valute, dobijen od currency-exchange mikroservisa.
- * Polje environment sluzi da se vidi sa koje instance servisa je odgovor stigao.
- */
 public class ExchangeRateDto {
-
     private String from;
     private String to;
     private BigDecimal conversionMultiple;

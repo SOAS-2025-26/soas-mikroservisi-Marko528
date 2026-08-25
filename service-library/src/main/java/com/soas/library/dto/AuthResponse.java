@@ -1,10 +1,6 @@
 package com.soas.library.dto;
 
-/**
- * Odgovor users-service-a na proveru kredencijala.
- */
 public class AuthResponse {
-
     private boolean authenticated;
     private String email;
     private Role role;

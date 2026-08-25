@@ -14,21 +14,9 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Basic autentikacija na nivou API-Gateway-a - obavezan deo specifikacije.
- *
- * Pravila pristupa:
- *  - /internal/**                                 zabranjeno spolja (samo medjuservisna komunikacija)
- *  - /currency-exchange/**, /crypto-exchange/**   dostupno bez prijave (kursevi su javni)
- *  - sve ostalo                                   zahteva basic autentikaciju
- *
- * Kredencijali se proveravaju nad users-service mikroservisom
- * ({@link UsersServiceAuthenticationManager}).
- */
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
-
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
                                                          ReactiveAuthenticationManager authenticationManager,
@@ -42,21 +30,17 @@ public class SecurityConfig {
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(entryPoint))
                 .authenticationManager(authenticationManager)
                 .authorizeExchange(exchange -> exchange
-                        // Preflight zahtevi korisnickog interfejsa.
+
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Interni endpoint-i nisu dostupni krajnjem korisniku.
+
                         .pathMatchers("/internal/**").denyAll()
                         .pathMatchers("/actuator/**").permitAll()
-                        // Kursevi valuta stoje ispred Login stranice.
+
                         .pathMatchers("/currency-exchange/**", "/crypto-exchange/**").permitAll()
                         .anyExchange().authenticated())
                 .build();
     }
 
-    /**
-     * Dozvoljava korisnickom interfejsu (React razvojni server) da salje
-     * zahteve ka gateway-u zajedno sa Authorization zaglavljem.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

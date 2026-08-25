@@ -17,15 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Pribavlja kurseve fiat valuta sa eksternog API-ja.
- *
- * Odgovori se kratkotrajno kesiraju kako se eksterni servis ne bi pozivao
- * pri svakom zahtevu (kursevi se azuriraju jednom dnevno).
- */
 @Service
 public class CurrencyExchangeService {
-
     private static final Logger log = LoggerFactory.getLogger(CurrencyExchangeService.class);
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
 
@@ -39,9 +32,6 @@ public class CurrencyExchangeService {
         this.environment = "currency-exchange na portu " + port;
     }
 
-    /**
-     * Kurs razmene iz valute {@code from} u valutu {@code to}.
-     */
     public ExchangeRateDto retrieveExchangeValue(String from, String to) {
         String base = normalize(from);
         String target = normalize(to);
@@ -59,12 +49,10 @@ public class CurrencyExchangeService {
         return new ExchangeRateDto(base, target, rate, environment);
     }
 
-    /** Spisak svih podrzanih fiat valuta - koristi ga korisnicki interfejs. */
     public List<String> supportedCurrencies() {
         return ratesFor("EUR").keySet().stream().sorted().toList();
     }
 
-    /** Svi kursevi u odnosu na zadatu baznu valutu. */
     public Map<String, BigDecimal> allRates(String base) {
         return ratesFor(normalize(base));
     }
@@ -85,7 +73,7 @@ public class CurrencyExchangeService {
                 return cached.rates();
             }
             throw new ExternalServiceException(
-                    "Eksterni servis sa kursevima fiat valuta trenutno nije dostupan. Pokusajte ponovo kasnije.");
+                    "Eksterni servis sa kursevima fiat valuta trenutno nije dostupan. Pokušajte ponovo kasnije.");
         }
 
         if (response == null || !response.isSuccess() || response.getRates() == null) {
@@ -104,7 +92,7 @@ public class CurrencyExchangeService {
         String normalized = code.trim().toUpperCase();
         if (!normalized.matches("[A-Z]{3}")) {
             throw new InvalidRequestException(
-                    "Kod valute mora imati tacno tri slova (npr. EUR, USD, RSD), a prosledjeno je: " + code);
+                    "Kod valute mora imati tacno tri slova (npr. EUR, USD, RSD), a prosleđeno je: " + code);
         }
         return normalized;
     }

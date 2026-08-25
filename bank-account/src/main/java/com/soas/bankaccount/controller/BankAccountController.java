@@ -16,37 +16,25 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Javni REST interfejs bank-account mikroservisa (dostupan kroz API-Gateway).
- *
- * Autorizacija:
- *  - OWNER: nema pristup
- *  - ADMIN: dodavanje, azuriranje, brisanje i pregled svih racuna
- *  - USER: pregled iskljucivo sopstvenog racuna
- */
 @RestController
 @RequestMapping("/bank-accounts")
 public class BankAccountController {
-
     private final BankAccountService service;
 
     public BankAccountController(BankAccountService service) {
         this.service = service;
     }
 
-    /** Svi bankovni racuni u sistemu (samo ADMIN). */
     @GetMapping
     public List<BankAccountDto> findAll() {
         return service.findAll();
     }
 
-    /** Racun prijavljenog korisnika. */
     @GetMapping("/me")
     public List<BankAccountDto> findMyAccount() {
         return service.findMyAccount();
     }
 
-    /** Racun konkretnog korisnika (ADMIN bilo koji, USER samo svoj). */
     @GetMapping("/{email}")
     public List<BankAccountDto> findByEmail(@PathVariable String email) {
         return service.findByEmail(email);

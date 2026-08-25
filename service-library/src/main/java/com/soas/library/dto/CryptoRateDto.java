@@ -2,11 +2,7 @@ package com.soas.library.dto;
 
 import java.math.BigDecimal;
 
-/**
- * Kurs razmene koji ukljucuje kripto valutu, dobijen od crypto-exchange mikroservisa.
- */
 public class CryptoRateDto {
-
     private String from;
     private String to;
     private BigDecimal conversionMultiple;

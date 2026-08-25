@@ -20,20 +20,10 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.stream.Collectors;
 
-/**
- * Globalni handler izuzetaka - zajednicki za sve mikroservise.
- *
- * Svaki izuzetak se pretvara u {@link ErrorResponse}: statusni kod + jasno
- * tekstualno objasnjenje greske. Stack-trace se nikada ne salje korisniku,
- * vec se samo loguje na serveru.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    // ---------- Poslovna logika ----------
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
@@ -62,22 +52,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ExternalServiceException.class)
     public ResponseEntity<ErrorResponse> handleExternalService(ExternalServiceException ex, HttpServletRequest req) {
-        log.warn("Greska eksternog servisa: {}", ex.getMessage());
+        log.warn("Greška eksternog servisa: {}", ex.getMessage());
         return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), req);
     }
 
-    // ---------- Medjuservisna (Feign) komunikacija ----------
-
-    /**
-     * Greska koju je vratio drugi mikroservis. Prosledjujemo originalni statusni
-     * kod i originalnu poruku, umesto da korisniku prikazemo Feign stack-trace.
-     */
     @ExceptionHandler(FeignException.class)
     public ResponseEntity<ErrorResponse> handleFeign(FeignException ex, HttpServletRequest req) {
         HttpStatus status = HttpStatus.resolve(ex.status());
         if (status == null || ex.status() <= 0) {
             return build(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Ciljni mikroservis trenutno nije dostupan. Pokusajte ponovo kasnije.", req);
+                    "Ciljni mikroservis trenutno nije dostupan. Pokušajte ponovo kasnije.", req);
         }
         return build(status, extractMessage(ex), req);
     }
@@ -85,7 +69,7 @@ public class GlobalExceptionHandler {
     private String extractMessage(FeignException ex) {
         String body = ex.contentUTF8();
         if (body == null || body.isBlank()) {
-            return "Greska pri komunikaciji sa drugim mikroservisom (status " + ex.status() + ").";
+            return "Greška pri komunikaciji sa drugim mikroservisom (status " + ex.status() + ").";
         }
         try {
             JsonNode node = MAPPER.readTree(body);
@@ -96,12 +80,9 @@ public class GlobalExceptionHandler {
                 return node.get("error").asText();
             }
         } catch (Exception ignored) {
-            // telo nije JSON - vracamo ga kao obican tekst ispod
         }
         return body.length() > 300 ? body.substring(0, 300) : body;
     }
-
-    // ---------- Validacija i losi zahtevi ----------
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
@@ -136,12 +117,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
         log.warn("Narusen integritet baze: {}", ex.getMostSpecificCause().getMessage());
         return build(HttpStatus.CONFLICT,
-                "Operacija narusava ogranicenja baze podataka (verovatno duplirana vrednost).", req);
+                "Operacija narušava ograničenja baze podataka (verovatno duplirana vrednost).", req);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoHandler(NoHandlerFoundException ex, HttpServletRequest req) {
-        return build(HttpStatus.NOT_FOUND, "Trazena putanja ne postoji: " + ex.getRequestURL(), req);
+        return build(HttpStatus.NOT_FOUND, "Tražena putanja ne postoji: " + ex.getRequestURL(), req);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -149,30 +130,22 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
     }
 
-    // ---------- Fault tolerance ----------
-
-    /**
-     * Circuit breaker je otvoren (resilience4j). Klasa se poredi po imenu kako
-     * util modul ne bi morao da zavisi od resilience4j biblioteke.
-     */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex, HttpServletRequest req) {
         if ("CallNotPermittedException".equals(ex.getClass().getSimpleName())) {
             return build(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Servis je privremeno nedostupan (circuit breaker je otvoren). Pokusajte ponovo za nekoliko trenutaka.", req);
+                    "Servis je privremeno nedostupan (circuit breaker je otvoren). Pokušajte ponovo za nekoliko trenutaka.", req);
         }
         log.error("Neocekivan runtime izuzetak", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Doslo je do neocekivane greske pri obradi zahteva.", req);
+                "Doslo je do neocekivane greške pri obradi zahteva.", req);
     }
-
-    // ---------- Poslednja linija odbrane ----------
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAll(Exception ex, HttpServletRequest req) {
-        log.error("Neobradjen izuzetak", ex);
+        log.error("Neobrađen izuzetak", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Doslo je do neocekivane greske na serveru.", req);
+                "Doslo je do neocekivane greške na serveru.", req);
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest req) {

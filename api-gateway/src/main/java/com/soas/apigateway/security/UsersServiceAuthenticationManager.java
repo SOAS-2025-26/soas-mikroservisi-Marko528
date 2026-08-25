@@ -21,19 +21,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
-/**
- * Provera kredencijala basic autentikacije nad users-service mikroservisom.
- *
- * Instanca users-service-a se pronalazi preko Eureka naming servera, a poziv
- * se izvrsava RestTemplate-om. Specifikacija zabranjuje RestTemplate u
- * mikroservisima, uz izricit izuzetak za API-Gateway - sto je upravo ovaj slucaj.
- *
- * Poziv je blokirajuci, pa se izvrsava na zasebnom nitnom bazenu kako ne bi
- * blokirao reaktivnu petlju gateway-a.
- */
 @Component
 public class UsersServiceAuthenticationManager implements ReactiveAuthenticationManager {
-
     private static final Logger log = LoggerFactory.getLogger(UsersServiceAuthenticationManager.class);
     private static final String USERS_SERVICE = "users-service";
 
@@ -64,12 +53,11 @@ public class UsersServiceAuthenticationManager implements ReactiveAuthentication
             }
             return response;
         } catch (HttpClientErrorException ex) {
-            // users-service vraca 403 kada kredencijali ne odgovaraju.
             throw new BadCredentialsException("Neispravan email ili lozinka.");
         } catch (ResourceAccessException ex) {
             log.error("users-service nije dostupan: {}", ex.getMessage());
             throw new AuthenticationServiceException(
-                    "Servis za autentikaciju trenutno nije dostupan. Pokusajte ponovo kasnije.");
+                    "Servis za autentikaciju trenutno nije dostupan. Pokušajte ponovo kasnije.");
         }
     }
 
@@ -78,7 +66,7 @@ public class UsersServiceAuthenticationManager implements ReactiveAuthentication
         if (instances.isEmpty()) {
             log.error("users-service nije registrovan na Eureka serveru");
             throw new AuthenticationServiceException(
-                    "Servis za autentikaciju nije registrovan na naming serveru. Pokusajte ponovo kasnije.");
+                    "Servis za autentikaciju nije registrovan na naming serveru. Pokušajte ponovo kasnije.");
         }
         return instances.get(0).getUri().toString();
     }

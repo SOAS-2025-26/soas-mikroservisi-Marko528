@@ -21,29 +21,10 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Razmena obicnih (fiat) i crypto valuta.
- *
- * Podrzane su tri vrste razmene:
- *  - <b>crypto u crypto</b>: sa novcanika se skida polazna, a dodaje ciljna kripto valuta,
- *  - <b>fiat u crypto</b>: sa bankovnog racuna se skida fiat iznos, a na novcanik dodaje kripto,
- *  - <b>crypto u fiat</b>: sa novcanika se skida kripto, a na bankovni racun dodaje fiat iznos.
- *
- * Kripto valute je moguce kupovati i prodavati iskljucivo za USD i EUR. Ako se
- * u zahtevu nadje neka druga fiat valuta, ona se prvo konvertuje u EUR (odnosno
- * iz EUR u trazenu valutu) kroz currency-conversion mikroservis.
- *
- * Autorizacija:
- *  - OWNER ne moze da pristupi ovom servisu
- *  - ADMIN ne moze da pristupi ovom servisu
- *  - USER je autorizovan za upotrebu ovog servisa
- */
 @Service
 public class TradeService {
-
     private static final Logger log = LoggerFactory.getLogger(TradeService.class);
 
-    /** Jedine fiat valute za koje je dozvoljena direktna kupovina i prodaja kripto valuta. */
     private static final Set<String> DIRECT_FIAT = Set.of("USD", "EUR");
 
     private static final int FIAT_SCALE = 2;
@@ -73,10 +54,6 @@ public class TradeService {
         this.environment = "trade-service na portu " + port;
     }
 
-    /**
-     * Glavna ulazna tacka: prepoznaje vrstu razmene i prosledjuje je
-     * odgovarajucoj metodi.
-     */
     public TradeResponse trade(String from, String to, BigDecimal quantity) {
         auth.requireAnyOf(Role.USER);
         String email = auth.currentEmail();
@@ -107,16 +84,11 @@ public class TradeService {
                         + "Za tu namenu koristite currency-conversion servis.");
     }
 
-    // ------------------------------------------------------------------
-    // Razmena crypto u crypto
-    // ------------------------------------------------------------------
-
     private TradeResponse cryptoToCrypto(String email, String source, String target, BigDecimal amount) {
         CryptoRateDto rate = rateService.cryptoRate(source, target);
         BigDecimal converted = scale(amount.multiply(rate.getConversionMultiple()), CRYPTO_SCALE);
         requireNonZero(converted, target, rate.getConversionMultiple());
 
-        // Skidanje sa novcanika prvo - ono baca gresku ako nema dovoljno sredstava.
         walletProxy.debit(email, source, amount);
         List<CryptoWalletDto> wallet = walletProxy.credit(email, target, converted);
 
@@ -125,28 +97,23 @@ public class TradeService {
         TradeResponse response = baseResponse(email, "CRYPTO_U_CRYPTO", source, target, amount,
                 converted, rate.getConversionMultiple(), rate.getEnvironment());
         response.setCryptoWallet(wallet);
-        response.setMessage("Uspesno je izvrsena razmena " + source + ": " + amount
+        response.setMessage("Uspešno je izvršena razmena " + source + ": " + amount
                 + " za " + target + ": " + converted);
         return response;
     }
-
-    // ------------------------------------------------------------------
-    // Razmena fiat u crypto
-    // ------------------------------------------------------------------
 
     private TradeResponse fiatToCrypto(String email, String source, String target, BigDecimal amount) {
         String payCurrency = source;
         BigDecimal payAmount = amount;
         String intermediateNote = "";
 
-        // Kripto se kupuje samo za USD ili EUR - ostale valute se prvo konvertuju.
         if (!DIRECT_FIAT.contains(source)) {
             ConversionResponse conversion = conversionProxy.convert(source, pivotCurrency, amount);
             payCurrency = pivotCurrency;
             payAmount = conversion.getConvertedAmount();
-            intermediateNote = " (medjukorak: " + source + ": " + amount + " zamenjeno za "
+            intermediateNote = " (međukorak: " + source + ": " + amount + " zamenjeno za "
                     + pivotCurrency + ": " + payAmount + ")";
-            log.info("Medjukorak za {}: {} {} -> {} {}", email, amount, source, payAmount, pivotCurrency);
+            log.info("Međukorak za {}: {} {} -> {} {}", email, amount, source, payAmount, pivotCurrency);
         }
 
         CryptoRateDto rate = rateService.cryptoRate(payCurrency, target);
@@ -161,17 +128,12 @@ public class TradeService {
         TradeResponse response = baseResponse(email, "FIAT_U_CRYPTO", source, target, amount,
                 converted, rate.getConversionMultiple(), rate.getEnvironment());
         response.setCryptoWallet(wallet);
-        response.setMessage("Uspesno je izvrsena razmena " + source + ": " + amount
+        response.setMessage("Uspešno je izvršena razmena " + source + ": " + amount
                 + " za " + target + ": " + converted + intermediateNote);
         return response;
     }
 
-    // ------------------------------------------------------------------
-    // Razmena crypto u fiat
-    // ------------------------------------------------------------------
-
     private TradeResponse cryptoToFiat(String email, String source, String target, BigDecimal amount) {
-        // Kripto se prodaje samo za USD ili EUR; ostale valute se dobijaju naknadnom konverzijom.
         String receiveCurrency = DIRECT_FIAT.contains(target) ? target : pivotCurrency;
 
         CryptoRateDto rate = rateService.cryptoRate(source, receiveCurrency);
@@ -188,7 +150,7 @@ public class TradeService {
             ConversionResponse conversion = conversionProxy.convert(receiveCurrency, target, converted);
             account = conversion.getBankAccount();
             finalAmount = conversion.getConvertedAmount();
-            intermediateNote = " (medjukorak: " + source + ": " + amount + " zamenjeno za "
+            intermediateNote = " (međukorak: " + source + ": " + amount + " zamenjeno za "
                     + receiveCurrency + ": " + converted + ")";
         }
 
@@ -197,12 +159,10 @@ public class TradeService {
         TradeResponse response = baseResponse(email, "CRYPTO_U_FIAT", source, target, amount,
                 finalAmount, rate.getConversionMultiple(), rate.getEnvironment());
         response.setBankAccount(account);
-        response.setMessage("Uspesno je izvrsena razmena " + source + ": " + amount
+        response.setMessage("Uspešno je izvršena razmena " + source + ": " + amount
                 + " za " + target + ": " + finalAmount + intermediateNote);
         return response;
     }
-
-    // ------------------------------------------------------------------
 
     private TradeResponse baseResponse(String email, String tradeType, String source, String target,
                                        BigDecimal quantity, BigDecimal converted,
@@ -239,14 +199,14 @@ public class TradeService {
         if (!normalized.matches("[A-Z0-9]{2,5}")) {
             throw new InvalidRequestException(
                     "Kod valute mora imati 2 do 5 slova ili cifara (npr. EUR, USD, BTC, ETH), "
-                            + "a prosledjeno je: " + code);
+                            + "a prosleđeno je: " + code);
         }
         return normalized;
     }
 
     private BigDecimal requirePositive(BigDecimal quantity) {
         if (quantity == null || quantity.signum() <= 0) {
-            throw new InvalidRequestException("Kolicina za razmenu mora biti veca od nule.");
+            throw new InvalidRequestException("Količina za razmenu mora biti veća od nule.");
         }
         return quantity;
     }

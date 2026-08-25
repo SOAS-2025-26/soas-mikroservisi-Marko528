@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CryptoWalletRepository extends JpaRepository<CryptoWallet, Long> {
-
     List<CryptoWallet> findByEmailIgnoreCaseOrderByCryptoCodeAsc(String email);
 
     Optional<CryptoWallet> findByEmailIgnoreCaseAndCryptoCodeIgnoreCase(String email, String cryptoCode);

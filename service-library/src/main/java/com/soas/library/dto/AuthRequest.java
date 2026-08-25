@@ -1,11 +1,6 @@
 package com.soas.library.dto;
 
-/**
- * Kredencijali koje API-Gateway prosledjuje users-service-u radi provere
- * basic autentikacije.
- */
 public class AuthRequest {
-
     private String email;
     private String password;
 

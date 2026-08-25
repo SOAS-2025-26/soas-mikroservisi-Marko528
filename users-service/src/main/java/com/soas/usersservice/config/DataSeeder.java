@@ -9,19 +9,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/**
- * Popunjava H2 bazu pocetnim korisnicima pri svakom pokretanju servisa
- * (H2 je in-memory baza, pa se podaci ne cuvaju izmedju pokretanja).
- *
- * Lozinke se hesiraju BCrypt algoritmom; njihove originalne vrednosti
- * su navedene u README.md fajlu projekta.
- *
- * Odgovarajuci bankovni racuni i novcanici se pocetno kreiraju u
- * bank-account i crypto-wallet servisima (database per service).
- */
 @Component
 public class DataSeeder implements CommandLineRunner {
-
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final UserRepository repository;

@@ -8,15 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
-/**
- * REST interfejs trade mikroservisa.
- *
- * Prema specifikaciji, korisnicki zahtev kroz API-Gateway ima oblik:
- *   localhost:8765/trade-service?from=X&to=Y&quantity=Q
- */
 @RestController
 public class TradeController {
-
     private final TradeService service;
 
     public TradeController(TradeService service) {

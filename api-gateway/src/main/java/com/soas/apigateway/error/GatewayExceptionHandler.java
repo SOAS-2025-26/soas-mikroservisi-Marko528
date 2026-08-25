@@ -23,18 +23,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Obrada izuzetaka na nivou API-Gateway-a.
- *
- * Gateway je reaktivna aplikacija i ne moze da koristi
- * {@code GlobalExceptionHandler} iz util modula (koji radi nad servlet stekom),
- * pa je ovde napravljen ekvivalent koji vraca isti JSON format greske.
- * Korisnik nikada ne dobija stack-trace, vec statusni kod i jasno objasnjenje.
- */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
-
     private static final Logger log = LoggerFactory.getLogger(GatewayExceptionHandler.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
@@ -51,7 +42,6 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
         String message;
 
         if (error instanceof AuthenticationServiceException) {
-            // Users-service jos nije registrovan na Eureki ili je nedostupan.
             status = HttpStatus.SERVICE_UNAVAILABLE;
             message = error.getMessage();
         } else if (error instanceof ResponseStatusException statusException) {
@@ -60,11 +50,11 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
             message = describeRoutingProblem(status, statusException.getReason(), exchange);
         } else if (error instanceof IOException || error instanceof java.net.ConnectException) {
             status = HttpStatus.SERVICE_UNAVAILABLE;
-            message = "Ciljni mikroservis trenutno nije dostupan. Pokusajte ponovo za nekoliko trenutaka.";
+            message = "Ciljni mikroservis trenutno nije dostupan. Pokušajte ponovo za nekoliko trenutaka.";
         } else {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
-            message = "Doslo je do neocekivane greske na API-Gateway-u.";
-            log.error("Neobradjen izuzetak na gateway-u", error);
+            message = "Doslo je do neocekivane greške na API-Gateway-u.";
+            log.error("Neobrađen izuzetak na gateway-u", error);
         }
 
         response.setStatusCode(status);
@@ -96,7 +86,7 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
         try {
             bytes = mapper.writeValueAsBytes(body);
         } catch (Exception ex) {
-            bytes = "{\"message\":\"Greska na API-Gateway-u.\"}".getBytes(StandardCharsets.UTF_8);
+            bytes = "{\"message\":\"Greška na API-Gateway-u.\"}".getBytes(StandardCharsets.UTF_8);
         }
         DataBuffer buffer = response.bufferFactory().wrap(bytes);
         return response.writeWith(Mono.just(buffer));

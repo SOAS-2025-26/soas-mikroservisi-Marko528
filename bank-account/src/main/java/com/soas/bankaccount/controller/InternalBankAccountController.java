@@ -13,17 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Interni interfejs koji koriste users-service, currency-conversion i
- * trade-service preko Feign klijenta.
- *
- * Putanja /internal/** se ne rutira kroz API-Gateway, pa nije dostupna
- * krajnjem korisniku.
- */
 @RestController
 @RequestMapping("/internal/bank-accounts")
 public class InternalBankAccountController {
-
     private final BankAccountService service;
 
     public InternalBankAccountController(BankAccountService service) {

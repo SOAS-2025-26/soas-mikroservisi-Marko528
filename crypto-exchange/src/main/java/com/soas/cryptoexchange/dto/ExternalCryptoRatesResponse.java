@@ -5,13 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 import java.util.Map;
 
-/**
- * Odgovor eksternog Coinbase API-ja sa kursevima kripto valuta.
- * Struktura: { "data": { "currency": "BTC", "rates": { "USD": "...", ... } } }
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ExternalCryptoRatesResponse {
-
     private Data data;
 
     public Data getData() { return data; }
@@ -23,7 +18,6 @@ public class ExternalCryptoRatesResponse {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Data {
-
         private String currency;
         private Map<String, BigDecimal> rates;
 

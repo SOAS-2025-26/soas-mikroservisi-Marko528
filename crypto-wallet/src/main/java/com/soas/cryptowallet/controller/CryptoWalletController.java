@@ -16,37 +16,25 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Javni REST interfejs crypto-wallet mikroservisa (dostupan kroz API-Gateway).
- *
- * Autorizacija:
- *  - OWNER: nema pristup
- *  - ADMIN: dodavanje, azuriranje, brisanje i pregled svih novcanika
- *  - USER: pregled iskljucivo sopstvenog novcanika
- */
 @RestController
 @RequestMapping("/crypto-wallets")
 public class CryptoWalletController {
-
     private final CryptoWalletService service;
 
     public CryptoWalletController(CryptoWalletService service) {
         this.service = service;
     }
 
-    /** Svi novcaniki u sistemu (samo ADMIN). */
     @GetMapping
     public List<CryptoWalletDto> findAll() {
         return service.findAll();
     }
 
-    /** Novcanik prijavljenog korisnika. */
     @GetMapping("/me")
     public List<CryptoWalletDto> findMyWallet() {
         return service.findMyWallet();
     }
 
-    /** Novcanik konkretnog korisnika (ADMIN bilo koji, USER samo svoj). */
     @GetMapping("/{email}")
     public List<CryptoWalletDto> findByEmail(@PathVariable String email) {
         return service.findByEmail(email);

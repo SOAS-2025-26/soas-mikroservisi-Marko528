@@ -12,27 +12,16 @@ import reactor.core.publisher.Mono;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Prijava korisnika na aplikaciju.
- *
- * Endpoint ne prima telo zahteva - kredencijali se salju kroz standardno
- * Authorization: Basic zaglavlje, koje gateway vec proverava. Ako je provera
- * prosla, ovde se korisniku vraca njegov email i uloga, sto korisnicki
- * interfejs koristi da prikaze odgovarajuce ekrane.
- */
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-
     private static final String ROLE_PREFIX = "ROLE_";
 
-    /** Provera kredencijala - uspesan odgovor znaci da je prijava validna. */
     @PostMapping("/login")
     public Mono<Map<String, Object>> login() {
         return currentUser();
     }
 
-    /** Podaci o trenutno prijavljenom korisniku. */
     @GetMapping("/me")
     public Mono<Map<String, Object>> me() {
         return currentUser();

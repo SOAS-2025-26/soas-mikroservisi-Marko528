@@ -1,11 +1,6 @@
 package com.soas.apigateway.dto;
 
-/**
- * Odgovor users-service-a na proveru kredencijala.
- * Definisan lokalno jer gateway ne zavisi od service-library modula.
- */
 public class AuthResponse {
-
     private boolean authenticated;
     private String email;
     private String role;

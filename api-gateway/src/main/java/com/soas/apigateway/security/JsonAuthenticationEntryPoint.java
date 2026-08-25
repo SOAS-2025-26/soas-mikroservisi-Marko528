@@ -18,15 +18,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Odgovor na neuspesnu ili nedostajucu basic autentikaciju.
- *
- * Umesto praznog tela ili stack-trace-a, korisniku se vraca isti JSON format
- * greske koji koriste i ostali mikroservisi.
- */
 @Component
 public class JsonAuthenticationEntryPoint implements ServerAuthenticationEntryPoint {
-
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -35,7 +28,7 @@ public class JsonAuthenticationEntryPoint implements ServerAuthenticationEntryPo
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        // Zadrzano standardno basic zaglavlje, da bi i pregledac ponudio prijavu.
+
         response.getHeaders().add(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"SOAS aplikacija\"");
 
         Map<String, Object> body = new LinkedHashMap<>();

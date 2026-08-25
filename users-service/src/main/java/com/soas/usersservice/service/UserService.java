@@ -19,18 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Poslovna logika nad korisnicima, ukljucujuci proveru ovlascenja:
- *
- *  - OWNER moze da dodaje, azurira i brise sve korisnike
- *  - ADMIN moze da dodaje i azurira korisnike sa ulogom USER
- *  - USER nema pristup ovom servisu
- *
- * U sistemu moze postojati samo jedan korisnik sa ulogom OWNER.
- */
 @Service
 public class UserService {
-
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository repository;
@@ -49,10 +39,6 @@ public class UserService {
         this.cryptoWalletProxy = cryptoWalletProxy;
     }
 
-    // ------------------------------------------------------------------
-    // Citanje
-    // ------------------------------------------------------------------
-
     @Transactional(readOnly = true)
     public List<UserDto> findAll() {
         auth.requireAnyOf(Role.OWNER, Role.ADMIN);
@@ -65,7 +51,6 @@ public class UserService {
         return toDto(getOrThrow(id));
     }
 
-    /** Interna pretraga po email-u - koriste je drugi mikroservisi, bez provere uloge. */
     @Transactional(readOnly = true)
     public UserDto findByEmailInternal(String email) {
         User user = repository.findByEmailIgnoreCase(email)
@@ -74,25 +59,21 @@ public class UserService {
         return toDto(user);
     }
 
-    // ------------------------------------------------------------------
-    // Kreiranje
-    // ------------------------------------------------------------------
-
     @Transactional
     public UserDto create(UserDto dto) {
         Role callerRole = auth.requireAnyOf(Role.OWNER, Role.ADMIN);
 
         if (callerRole == Role.ADMIN && dto.getRole() != Role.USER) {
             throw new UnauthorizedActionException(
-                    "ADMIN moze da dodaje iskljucivo korisnike sa ulogom USER.");
+                    "ADMIN može da dodaje isključivo korisnike sa ulogom USER.");
         }
         if (dto.getRole() == Role.OWNER && repository.countByRole(Role.OWNER) > 0) {
             throw new DuplicateResourceException(
-                    "U sistemu vec postoji korisnik sa ulogom OWNER. Dozvoljen je samo jedan.");
+                    "U sistemu već postoji korisnik sa ulogom OWNER. Dozvoljen je samo jedan.");
         }
         if (repository.existsByEmailIgnoreCase(dto.getEmail())) {
             throw new DuplicateResourceException(
-                    "Korisnik sa email adresom " + dto.getEmail() + " vec postoji.");
+                    "Korisnik sa email adresom " + dto.getEmail() + " već postoji.");
         }
 
         User saved = repository.save(new User(
@@ -100,19 +81,14 @@ public class UserService {
                 encoder.encode(dto.getPassword()),
                 dto.getRole()));
 
-        // Novi korisnik sa ulogom USER automatski dobija bankovni racun i novcanik.
         if (saved.getRole() == Role.USER) {
             bankAccountProxy.createDefaultAccount(saved.getEmail());
             cryptoWalletProxy.createDefaultWallet(saved.getEmail());
-            log.info("Kreiran bankovni racun i crypto novcanik za korisnika {}", saved.getEmail());
+            log.info("Kreiran bankovni račun i crypto novčanik za korisnika {}", saved.getEmail());
         }
 
         return toDto(saved);
     }
-
-    // ------------------------------------------------------------------
-    // Azuriranje
-    // ------------------------------------------------------------------
 
     @Transactional
     public UserDto update(Long id, UserDto dto) {
@@ -125,20 +101,20 @@ public class UserService {
 
         if (callerRole == Role.ADMIN && (previousRole != Role.USER || newRole != Role.USER)) {
             throw new UnauthorizedActionException(
-                    "ADMIN moze da azurira iskljucivo korisnike sa ulogom USER i ne moze da im menja ulogu.");
+                    "ADMIN može da ažurira isključivo korisnike sa ulogom USER i ne može da im menja ulogu.");
         }
         if (previousRole == Role.OWNER && newRole != Role.OWNER) {
             throw new InvalidRequestException(
-                    "Korisniku sa ulogom OWNER nije moguce promeniti ulogu - sistem mora imati tacno jednog OWNER-a.");
+                    "Korisniku sa ulogom OWNER nije moguće promeniti ulogu - sistem mora imati tacno jednog OWNER-a.");
         }
         if (newRole == Role.OWNER && previousRole != Role.OWNER) {
             throw new DuplicateResourceException(
-                    "U sistemu vec postoji korisnik sa ulogom OWNER. Dozvoljen je samo jedan.");
+                    "U sistemu već postoji korisnik sa ulogom OWNER. Dozvoljen je samo jedan.");
         }
 
         String newEmail = dto.getEmail() == null ? previousEmail : dto.getEmail().trim();
         if (!newEmail.equalsIgnoreCase(previousEmail) && repository.existsByEmailIgnoreCase(newEmail)) {
-            throw new DuplicateResourceException("Korisnik sa email adresom " + newEmail + " vec postoji.");
+            throw new DuplicateResourceException("Korisnik sa email adresom " + newEmail + " već postoji.");
         }
 
         user.setEmail(newEmail);
@@ -153,33 +129,25 @@ public class UserService {
         return toDto(saved);
     }
 
-    /**
-     * Odrzava bankovni racun i novcanik uskladjenim sa promenama nad korisnikom:
-     * promena email-a, gubitak uloge USER ili dobijanje uloge USER.
-     */
     private void synchronizeAccounts(Role previousRole, Role newRole, String previousEmail, String newEmail) {
         if (previousRole == Role.USER && newRole != Role.USER) {
             bankAccountProxy.deleteByEmail(previousEmail);
             cryptoWalletProxy.deleteByEmail(previousEmail);
-            log.info("Korisnik {} vise nema ulogu USER - obrisani racun i novcanik", previousEmail);
+            log.info("Korisnik {} vise nema ulogu USER - obrisani račun i novčanik", previousEmail);
             return;
         }
         if (previousRole != Role.USER && newRole == Role.USER) {
             bankAccountProxy.createDefaultAccount(newEmail);
             cryptoWalletProxy.createDefaultWallet(newEmail);
-            log.info("Korisnik {} je dobio ulogu USER - kreiran racun i novcanik", newEmail);
+            log.info("Korisnik {} je dobio ulogu USER - kreiran račun i novčanik", newEmail);
             return;
         }
         if (newRole == Role.USER && !previousEmail.equalsIgnoreCase(newEmail)) {
             bankAccountProxy.changeEmail(previousEmail, newEmail);
             cryptoWalletProxy.changeEmail(previousEmail, newEmail);
-            log.info("Email korisnika promenjen sa {} na {} - azurirani racun i novcanik", previousEmail, newEmail);
+            log.info("Email korisnika promenjen sa {} na {} - ažurirani račun i novčanik", previousEmail, newEmail);
         }
     }
-
-    // ------------------------------------------------------------------
-    // Brisanje
-    // ------------------------------------------------------------------
 
     @Transactional
     public void delete(Long id) {
@@ -188,22 +156,17 @@ public class UserService {
         User user = getOrThrow(id);
         if (user.getRole() == Role.OWNER) {
             throw new InvalidRequestException(
-                    "Korisnika sa ulogom OWNER nije moguce obrisati - sistem mora imati tacno jednog OWNER-a.");
+                    "Korisnika sa ulogom OWNER nije moguće obrisati - sistem mora imati tacno jednog OWNER-a.");
         }
 
         repository.delete(user);
 
-        // Brisanje korisnika sa ulogom USER povlaci brisanje racuna i novcanika.
         if (user.getRole() == Role.USER) {
             bankAccountProxy.deleteByEmail(user.getEmail());
             cryptoWalletProxy.deleteByEmail(user.getEmail());
-            log.info("Obrisan korisnik {} zajedno sa bankovnim racunom i novcanikom", user.getEmail());
+            log.info("Obrisan korisnik {} zajedno sa bankovnim računom i novčanikom", user.getEmail());
         }
     }
-
-    // ------------------------------------------------------------------
-    // Autentikacija (poziva je iskljucivo API-Gateway)
-    // ------------------------------------------------------------------
 
     @Transactional(readOnly = true)
     public UserDto authenticate(String email, String rawPassword) {
@@ -218,14 +181,11 @@ public class UserService {
         return toDto(user);
     }
 
-    // ------------------------------------------------------------------
-
     private User getOrThrow(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Korisnik sa id vrednoscu " + id + " ne postoji."));
+                .orElseThrow(() -> new ResourceNotFoundException("Korisnik sa id vrednošću " + id + " ne postoji."));
     }
 
-    /** Lozinka se nikada ne vraca klijentu. */
     private UserDto toDto(User user) {
         return new UserDto(user.getId(), user.getEmail(), null, user.getRole());
     }

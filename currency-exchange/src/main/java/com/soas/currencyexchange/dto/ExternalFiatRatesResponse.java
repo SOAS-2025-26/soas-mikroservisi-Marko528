@@ -6,12 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.util.Map;
 
-/**
- * Odgovor eksternog API-ja (open.er-api.com) sa kursevima fiat valuta.
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ExternalFiatRatesResponse {
-
     private String result;
 
     @JsonProperty("base_code")

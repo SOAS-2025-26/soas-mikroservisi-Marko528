@@ -19,18 +19,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Pribavlja kurseve kripto valuta sa eksternog Coinbase API-ja.
- *
- * Kursevi kripto valuta se menjaju cesto, pa je kes namerno kratak.
- */
 @Service
 public class CryptoExchangeService {
-
     private static final Logger log = LoggerFactory.getLogger(CryptoExchangeService.class);
     private static final Duration CACHE_TTL = Duration.ofSeconds(60);
 
-    /** Najvece kripto valute koje aplikacija nudi korisniku. */
     private static final Set<String> SUPPORTED_CRYPTO = new LinkedHashSet<>(List.of(
             "BTC", "ETH", "USDT", "USDC", "BNB", "SOL", "XRP", "ADA", "DOGE", "TRX",
             "DOT", "MATIC", "LTC", "AVAX", "LINK", "XLM", "BCH", "UNI", "ATOM", "ETC"));
@@ -45,10 +38,6 @@ public class CryptoExchangeService {
         this.environment = "crypto-exchange na portu " + port;
     }
 
-    /**
-     * Kurs razmene iz valute {@code from} u valutu {@code to}.
-     * Bar jedna od dve valute je kripto valuta.
-     */
     public CryptoRateDto retrieveCryptoRate(String from, String to) {
         String base = normalize(from);
         String target = normalize(to);
@@ -66,17 +55,14 @@ public class CryptoExchangeService {
         return new CryptoRateDto(base, target, rate, environment);
     }
 
-    /** Spisak kripto valuta koje aplikacija podrzava. */
     public List<String> supportedCryptoCurrencies() {
         return List.copyOf(SUPPORTED_CRYPTO);
     }
 
-    /** Da li je zadati kod kripto valuta koju aplikacija podrzava. */
     public boolean isSupportedCrypto(String code) {
         return code != null && SUPPORTED_CRYPTO.contains(code.trim().toUpperCase());
     }
 
-    /** Cene svih podrzanih kripto valuta izrazene u zadatoj fiat valuti. */
     public Map<String, BigDecimal> priceList(String fiatCurrency) {
         String fiat = normalize(fiatCurrency);
         Map<String, BigDecimal> prices = new java.util.LinkedHashMap<>();
@@ -84,7 +70,7 @@ public class CryptoExchangeService {
             try {
                 prices.put(crypto, ratesFor(crypto).get(fiat));
             } catch (RuntimeException ex) {
-                log.debug("Preskacem {} - cena nije dostupna: {}", crypto, ex.getMessage());
+                log.debug("Preskačem {} - cena nije dostupna: {}", crypto, ex.getMessage());
             }
         }
         prices.values().removeIf(java.util.Objects::isNull);
@@ -111,7 +97,7 @@ public class CryptoExchangeService {
                 return cached.rates();
             }
             throw new ExternalServiceException(
-                    "Eksterni servis sa kursevima kripto valuta trenutno nije dostupan. Pokusajte ponovo kasnije.");
+                    "Eksterni servis sa kursevima kripto valuta trenutno nije dostupan. Pokušajte ponovo kasnije.");
         }
 
         if (response == null || !response.isSuccess()) {

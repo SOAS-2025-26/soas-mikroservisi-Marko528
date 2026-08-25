@@ -6,12 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/**
- * Podaci o korisniku aplikacije koji se razmenjuju izmedju mikroservisa.
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDto {
-
     private Long id;
 
     @NotBlank(message = "email je obavezan")

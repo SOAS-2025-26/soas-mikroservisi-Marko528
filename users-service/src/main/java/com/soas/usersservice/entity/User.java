@@ -10,14 +10,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Korisnik aplikacije. Za svakog korisnika se belezi id, email adresa,
- * lozinka i tacno jedna uloga (OWNER, ADMIN ili USER).
- */
 @Entity
 @Table(name = "app_users")
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,7 +20,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    /** Lozinka se cuva iskljucivo kao BCrypt hash. */
     @Column(nullable = false)
     private String password;
 

@@ -8,15 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
-/**
- * REST interfejs currency-conversion mikroservisa.
- *
- * Prema specifikaciji, korisnicki zahtev kroz API-Gateway ima oblik:
- *   localhost:8765/currency-conversion?from=X&to=Y&quantity=Q
- */
 @RestController
 public class CurrencyConversionController {
-
     private final CurrencyConversionService service;
 
     public CurrencyConversionController(CurrencyConversionService service) {

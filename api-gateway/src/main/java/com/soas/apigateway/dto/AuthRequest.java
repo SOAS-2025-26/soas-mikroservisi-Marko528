@@ -1,10 +1,6 @@
 package com.soas.apigateway.dto;
 
-/**
- * Kredencijali koje gateway prosledjuje users-service-u na proveru.
- */
 public class AuthRequest {
-
     private String email;
     private String password;
 

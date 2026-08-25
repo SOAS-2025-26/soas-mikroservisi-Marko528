@@ -16,18 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Javni REST interfejs users mikroservisa (dostupan kroz API-Gateway).
- *
- * Autorizacija:
- *  - OWNER: dodavanje, azuriranje i brisanje svih korisnika
- *  - ADMIN: dodavanje i azuriranje korisnika sa ulogom USER
- *  - USER: nema pristup
- */
 @RestController
 @RequestMapping("/users")
 public class UserController {
-
     private final UserService service;
 
     public UserController(UserService service) {

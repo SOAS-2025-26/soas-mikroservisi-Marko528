@@ -7,11 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-/**
- * Jedan zapis crypto novcanika: kolicina jedne kripto valute koju korisnik poseduje.
- */
 public class CryptoWalletDto {
-
     private Long id;
 
     @NotBlank(message = "email je obavezan")
@@ -21,8 +17,8 @@ public class CryptoWalletDto {
     @NotBlank(message = "kod kripto valute je obavezan (npr. BTC, ETH)")
     private String cryptoCode;
 
-    @NotNull(message = "kolicina je obavezna")
-    @DecimalMin(value = "0.0", message = "kolicina ne moze biti negativna")
+    @NotNull(message = "količina je obavezna")
+    @DecimalMin(value = "0.0", message = "količina ne može biti negativna")
     private BigDecimal amount;
 
     public CryptoWalletDto() {

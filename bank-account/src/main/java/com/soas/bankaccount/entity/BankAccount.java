@@ -10,19 +10,11 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.math.BigDecimal;
 
-/**
- * Jedna stavka bankovnog racuna: kolicina jedne fiat valute koju korisnik poseduje.
- *
- * Bankovni racun jednog korisnika cine svi zapisi sa istom email adresom, po
- * jedan za svaku valutu. Zato je jedinstvenost postavljena na par
- * (email, currency_code) - isti korisnik ne moze imati dva zapisa za istu valutu.
- */
 @Entity
 @Table(name = "bank_accounts",
         uniqueConstraints = @UniqueConstraint(name = "uk_bank_account_email_currency",
                 columnNames = {"email", "currency_code"}))
 public class BankAccount {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

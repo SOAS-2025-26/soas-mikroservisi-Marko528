@@ -7,15 +7,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 
-/**
- * Feign proxy ka currency-conversion mikroservisu.
- *
- * Koristi ga trade-service kada zahtev sadrzi fiat valutu razlicitu od USD/EUR,
- * pa je prvo potrebno konvertovati je u dolar ili euro.
- */
 @FeignClient(name = "currency-conversion")
 public interface CurrencyConversionProxy {
-
     @GetMapping("/currency-conversion")
     ConversionResponse convert(@RequestParam("from") String from,
                                @RequestParam("to") String to,
