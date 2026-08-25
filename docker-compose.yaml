@@ -1,0 +1,179 @@
+# ---------------------------------------------------------------------------
+# Pokretanje kompletne aplikacije u Docker-u.
+#
+#   docker compose up -d          pokretanje svih mikroservisa
+#   docker compose ps             pregled stanja
+#   docker compose logs -f        pracenje logova
+#   docker compose down           gasenje
+#
+# Slike se povlace sa Docker Hub-a (nalog marko528). Da bi se koristile lokalno
+# izgradjene slike umesto onih sa Hub-a, pokrenuti skriptu scripts/docker-build.sh.
+#
+# Front-end deo aplikacije se, prema specifikaciji, ne dokerizuje - pokrece se
+# zasebno komandom npm run dev u folderu frontend.
+# ---------------------------------------------------------------------------
+
+services:
+
+  # -------------------------------------------------------------------------
+  # Naming server (Eureka) - svi ostali servisi se registruju na njega
+  # -------------------------------------------------------------------------
+  naming-server:
+    image: marko528/soas-naming-server:latest
+    build: ./naming-server
+    container_name: soas-naming-server
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_HOSTNAME: naming-server
+    networks:
+      - soas-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # -------------------------------------------------------------------------
+  # Mikroservisi sa sopstvenom H2 bazom (database per service)
+  # -------------------------------------------------------------------------
+  users-service:
+    image: marko528/soas-users-service:latest
+    build: ./users-service
+    container_name: soas-users-service
+    ports:
+      - "8770:8770"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+    depends_on:
+      naming-server:
+        condition: service_healthy
+    networks:
+      - soas-network
+
+  bank-account:
+    image: marko528/soas-bank-account:latest
+    build: ./bank-account
+    container_name: soas-bank-account
+    ports:
+      - "8200:8200"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+    depends_on:
+      naming-server:
+        condition: service_healthy
+    networks:
+      - soas-network
+
+  crypto-wallet:
+    image: marko528/soas-crypto-wallet:latest
+    build: ./crypto-wallet
+    container_name: soas-crypto-wallet
+    ports:
+      - "8300:8300"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+    depends_on:
+      naming-server:
+        condition: service_healthy
+    networks:
+      - soas-network
+
+  # -------------------------------------------------------------------------
+  # Mikroservisi koji komuniciraju sa eksternim API servisima
+  # -------------------------------------------------------------------------
+  currency-exchange:
+    image: marko528/soas-currency-exchange:latest
+    build: ./currency-exchange
+    container_name: soas-currency-exchange
+    ports:
+      - "8000:8000"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+      FIAT_API_URL: https://open.er-api.com
+    depends_on:
+      naming-server:
+        condition: service_healthy
+    networks:
+      - soas-network
+
+  crypto-exchange:
+    image: marko528/soas-crypto-exchange:latest
+    build: ./crypto-exchange
+    container_name: soas-crypto-exchange
+    ports:
+      - "8400:8400"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+      CRYPTO_API_URL: https://api.coinbase.com
+    depends_on:
+      naming-server:
+        condition: service_healthy
+    networks:
+      - soas-network
+
+  # -------------------------------------------------------------------------
+  # Mikroservisi sa poslovnom logikom razmene
+  # -------------------------------------------------------------------------
+  currency-conversion:
+    image: marko528/soas-currency-conversion:latest
+    build: ./currency-conversion
+    container_name: soas-currency-conversion
+    ports:
+      - "8100:8100"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+    depends_on:
+      naming-server:
+        condition: service_healthy
+      currency-exchange:
+        condition: service_started
+      bank-account:
+        condition: service_started
+    networks:
+      - soas-network
+
+  trade-service:
+    image: marko528/soas-trade-service:latest
+    build: ./trade-service
+    container_name: soas-trade-service
+    ports:
+      - "8600:8600"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+      TRADE_PIVOT_CURRENCY: EUR
+    depends_on:
+      naming-server:
+        condition: service_healthy
+      crypto-exchange:
+        condition: service_started
+      crypto-wallet:
+        condition: service_started
+      currency-conversion:
+        condition: service_started
+    networks:
+      - soas-network
+
+  # -------------------------------------------------------------------------
+  # API Gateway - ulazna tacka aplikacije
+  # -------------------------------------------------------------------------
+  api-gateway:
+    image: marko528/soas-api-gateway:latest
+    build: ./api-gateway
+    container_name: soas-api-gateway
+    ports:
+      - "8765:8765"
+    environment:
+      EUREKA_URI: http://naming-server:8761/eureka
+    depends_on:
+      naming-server:
+        condition: service_healthy
+      users-service:
+        condition: service_started
+    networks:
+      - soas-network
+
+networks:
+  soas-network:
+    driver: bridge
