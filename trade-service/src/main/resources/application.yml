@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: trade-service
+
+server:
+  port: ${SERVER_PORT:8600}
+
+trade:
+  # Fiat valuta preko koje se posreduje kada zahtev sadrzi valutu razlicitu od USD/EUR.
+  pivot-currency: ${TRADE_PIVOT_CURRENCY:EUR}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+# ---------------------------------------------------------------------------
+# Fault tolerance (dodatne specifikacije projekta)
+# ---------------------------------------------------------------------------
+resilience4j:
+  retry:
+    instances:
+      cryptoExchange:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - feign.RetryableException
+          - feign.FeignException$InternalServerError
+          - feign.FeignException$ServiceUnavailable
+          - java.io.IOException
+          - com.soas.util.exception.ExternalServiceException
+        ignore-exceptions:
+          - com.soas.util.exception.InvalidRequestException
+          - com.soas.util.exception.InsufficientFundsException
+          - com.soas.util.exception.UnauthorizedActionException
+
+  circuitbreaker:
+    instances:
+      cryptoExchange:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        ignore-exceptions:
+          - com.soas.util.exception.InvalidRequestException
+          - com.soas.util.exception.InsufficientFundsException
+          - com.soas.util.exception.UnauthorizedActionException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    com.soas: INFO
